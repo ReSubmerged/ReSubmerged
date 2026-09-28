@@ -54,6 +54,11 @@ public sealed class SubmergedExileController(nint ptr) : ExileController(ptr)
         _darkness = transform.Find("Darkness");
         textTransform = transform.Find("Text");
 
+        judgeText = Instantiate(Text, Text.transform.parent);
+        judgeText.transform.localPosition += new Vector3(0, 0.35f, 1);
+        judgeText.text = TranslationController.Instance.GetString(StringNames.JudgeCourtAdjourned);
+        judgeText.gameObject.SetActive(false);
+
         _bubbles = transform.Find("BubbleSystem");
     }
 
@@ -218,7 +223,7 @@ public sealed class SubmergedExileController(nint ptr) : ExileController(ptr)
             PlayerControl.LocalPlayer.SetKillTimer(GameManager.Instance.LogicOptions.GetKillCooldown());
             ShipStatus.Instance.EmergencyCooldown = GameManager.Instance.LogicOptions.GetEmergencyCooldown();
             HudManager.Instance.PlayerCam.Locked = false;
-            HudManager.Instance.SetMapButtonEnabled(true);
+            HudManager.Instance.SetMapAndInfoButtonsEnabled(true);
             HudManager.Instance.SetHudActive(true);
             ControllerManager.Instance.CloseAndResetAll();
         }
