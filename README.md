@@ -62,8 +62,8 @@ Submerged depends on the following mods and modding tools in order to function p
 | Mod                                                       | Version           |
 |-----------------------------------------------------------|-------------------|
 | [BepInEx](https://builds.bepinex.dev/projects/bepinex_be) | `v6.0.0-be.788`   |
-| [RegionInstaller](https://github.com/Nb1X/RegionInstaller/releases/tag/v1.2.0-be) | `v1.2.0-be` or later |
-| [Reactor](https://github.com/NuclearPowered/Reactor/releases/tag/2.5.) | `v2.5.1` or later |
+| [RegionInstaller](https://github.com/Nb1X/RegionInstaller/releases) | `v1.2.0-be` or later |
+| [Reactor](https://github.com/NuclearPowered/Reactor/releases) | `v2.5.1` or later |
 
 > [!Note]
 > If you are using the Microsoft Store version of Among Us, you will need to download the `Unity (IL2CPP) for Windows (x64) games` version of BepInEx. Otherwise, you will need to download the `Unity (IL2CPP) for Windows (x86) games` version.
