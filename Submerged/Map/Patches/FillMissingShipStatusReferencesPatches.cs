@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using HarmonyLib;
 using Submerged.Extensions;
@@ -21,6 +22,20 @@ namespace Submerged.Map.Patches;
 [HarmonyPatch]
 public static class FillMissingShipStatusReferencesPatches
 {
+    // Champs que Submerged remplace de toute façon dans SubmarineStatus ou qui ne servent pas
+    // sur cette map : on les complète sans rien journaliser.
+    private static readonly HashSet<string> ExpectedFields =
+    [
+        nameof(ShipStatus.ExileCutscenePrefab),
+        nameof(ShipStatus.EmergencyOverlay),
+        nameof(ShipStatus.ReportOverlay),
+        nameof(ShipStatus.HatchActive),
+        nameof(ShipStatus.ShieldsActive),
+        nameof(ShipStatus.ShieldBorderOn),
+    ];
+
+    private static bool _alreadyLogged;
+
     [HarmonyPatch(typeof(ShipStatus), nameof(ShipStatus.Awake))]
     [HarmonyPrefix]
     [HarmonyPriority(Priority.First)]
@@ -36,6 +51,8 @@ public static class FillMissingShipStatusReferencesPatches
 
             return;
         }
+
+        List<string> filled = [];
 
         foreach (PropertyInfo prop in typeof(ShipStatus).GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly))
         {
@@ -63,13 +80,20 @@ public static class FillMissingShipStatusReferencesPatches
                 if (t && t.IsChildOf(skeld.transform)) continue;
 
                 prop.SetValue(__instance, fromSkeld);
-                Warning($"ShipStatus.{prop.Name} était null sur le prefab Submerged : copié depuis le Skeld ({fromSkeld.name}). " +
-                        "À ajouter au script ShipStatus de SubmergedUnity puis reconstruire le bundle.");
+                if (!ExpectedFields.Contains(prop.Name)) filled.Add($"{prop.Name} ({fromSkeld.name})");
             }
             catch (Exception e)
             {
                 Warning($"Impossible de vérifier ShipStatus.{prop.Name} : {e.Message}");
             }
+        }
+
+        // Un seul message par lancement du jeu, pas un par partie.
+        if (filled.Count > 0 && !_alreadyLogged)
+        {
+            _alreadyLogged = true;
+            Info($"Références ShipStatus manquantes sur le prefab Submerged, reprises du Skeld : {string.Join(", ", filled)}. " +
+                 "À ajouter au script ShipStatus de SubmergedUnity lors de la prochaine reconstruction du bundle.");
         }
     }
 
