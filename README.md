@@ -1,8 +1,32 @@
-![Submerged](./.github/Images/Icon.png)
+<p align="center">
+  <img align="center" src="https://github.com/ReSubmerged/ReSubmerged/blob/main/.github/Images/Icon.png">
+  </a>
+</p>
 
-# Submerged
+<h3 align="center">
+ReSubmerged
+</h3>
 
-Submerged is a mod for Among Us which adds a new map into the game.
+<p align="center">
+ReSubmerged is a mod for Among Us which adds a new map into the game.
+<br/>
+
+<hr />
+<p align="center">
+	<a href="https://github.com/ReSubmerged/ReSubmerged/releases">
+		<img alt="GitHub Downloads" src="https://img.shields.io/github/downloads/ReSubmerged/ReSubmerged/total">
+	</a>
+	<a href="https://github.com/ReSubmerged/ReSubmerged/releases/latest">
+		<img alt="Latest GitHub Release" src="https://img.shields.io/github/v/release/ReSubmerged/ReSubmerged?include_prereleases">
+	</a>
+	<a href="https://github.com/ReSubmerged/ReSubmerged/blob/main/LICENSE.md">
+		<img alt="GitHub License" src="https://img.shields.io/github/license/ReSubmerged/ReSubmerged">
+	</a>
+    <a href="https://discord.gg/zz2bCrU8wp">
+		<img alt="Discord" src="https://img.shields.io/discord/1076082745509429268?color=cornflowerblue&label=Discord&logo=Discord&logoColor=white">
+	</a>
+</p>
+<hr />
 
 ## Features
 
