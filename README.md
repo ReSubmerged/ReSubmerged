@@ -1,8 +1,32 @@
-![Submerged](./.github/Images/Icon.png)
+<p align="center">
+  <img align="center" src="https://github.com/ReSubmerged/ReSubmerged/blob/main/.github/Images/Icon.png">
+  </a>
+</p>
 
-# Submerged
+<h3 align="center">
+ReSubmerged
+</h3>
 
-Submerged is a mod for Among Us which adds a new map into the game.
+<p align="center">
+ReSubmerged is a mod for Among Us which adds a new map into the game.
+<br/>
+
+<hr />
+<p align="center">
+	<a href="https://github.com/ReSubmerged/ReSubmerged/releases">
+		<img alt="GitHub Downloads" src="https://img.shields.io/github/downloads/ReSubmerged/ReSubmerged/total">
+	</a>
+	<a href="https://github.com/ReSubmerged/ReSubmerged/releases/latest">
+		<img alt="Latest GitHub Release" src="https://img.shields.io/github/v/release/ReSubmerged/ReSubmerged?include_prereleases">
+	</a>
+	<a href="https://github.com/ReSubmerged/ReSubmerged/blob/main/LICENSE.md">
+		<img alt="GitHub License" src="https://img.shields.io/github/license/ReSubmerged/ReSubmerged">
+	</a>
+    <a href="https://discord.gg/zz2bCrU8wp">
+		<img alt="Discord" src="https://img.shields.io/discord/1076082745509429268?color=cornflowerblue&label=Discord&logo=Discord&logoColor=white">
+	</a>
+</p>
+<hr />
 
 ## Features
 
@@ -49,9 +73,10 @@ The table below lists the most recent Submerged release for each Among Us versio
 
 |                                       Among Us Version                                        | Submerged Version |                                        Links                                        |
 |:---------------------------------------------------------------------------------------------:|:-----------------:|:-----------------------------------------------------------------------------------:|
-|                                           `v18.*.*`                                           |   `v2026.*.*`   | [Soon](https://github.com/Isax820/ReSubmerged) | 
-|                                           `v18.0.0`                                           |   `v2026.9.26`   | [Download](https://github.com/Isax820/ReSubmerged/releases/tag/v2026.9.26) | 
-|                                           `v17.1.0`                                           |   `v2025.11.20`   | [Download](https://github.com/SubmergedAmongUs/Submerged/releases/tag/v2025.11.20/) | 
+|                                           `v19`                                           |   `v2026.10.11`   | [Download](https://github.com/ReSubmerged/ReSubmerged/releases/tag/v2026.10.11) |
+|                                           `v18.0.1`                                           |   `v2026.9.26`   | [Download](https://github.com/ReSubmerged/ReSubmerged/releases/tag/v2026.9.26) | 
+|                                           `v18.0.0`                                           |   `v2026.9.17`   | [Download](https://github.com/ReSubmerged/ReSubmerged/releases/tag/v2026.9.17) | 
+|                                           `v17.1.0`                                           |   `v2025.11.20`   |[Download](https://github.com/SubmergedAmongUs/Submerged/releases/tag/v2025.11.20/) | 
 
 
 # Dependencies
@@ -61,11 +86,11 @@ Submerged depends on the following mods and modding tools in order to function p
 | Mod                                                       | Version           |
 |-----------------------------------------------------------|-------------------|
 | [BepInEx](https://builds.bepinex.dev/projects/bepinex_be) | `v6.0.0-be.788`   |
-| [RegionInstaller](https://github.com/Nb1X/RegionInstaller/releases/tag/v1.2.0-be) | `v1.2.0-be` or later |
-| [Reactor](https://github.com/NuclearPowered/Reactor/releases/tag/2.5.) | `v2.5.1` or later |
+| [ReRegionInstaller](https://github.com/ReSubmerged/ReRegionInstaller) | `v1.1.0` or later |
+| [Reactor](https://github.com/NuclearPowered/Reactor/actions) | `v2.5.1-ci.417` or later |
 
 > [!Note]
-> If you are using the Microsoft Store version of Among Us, you will need to download the `Unity (IL2CPP) for Windows (x64) games` version of BepInEx. Otherwise, you will need to download the `Unity (IL2CPP) for Windows (x86) games` version.
+> If you are using the Epic Games, Steam or Microsoft Store version of Among Us, you will need to download the `Unity (IL2CPP) for Windows (x64) games` version of BepInEx.
 
 # Installation
 
