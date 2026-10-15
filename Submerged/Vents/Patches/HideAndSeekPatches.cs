@@ -15,6 +15,7 @@ public static class HideAndSeekPatches
 
         if (usable.TryCast<Vent>() is not { } vent) return;
 
+        // Hide-and-seek cannot use the main central cross-floor vents or admin vent.
         __result = __result && vent.Id is not (LOWER_CENTRAL_VENT_ID or UPPER_CENTRAL_VENT_ID or ADMIN_VENT_ID);
     }
 }
