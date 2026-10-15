@@ -14,7 +14,7 @@ ReSubmerged is a mod for Among Us which adds a new map into the game.
 <hr />
 <p align="center">
 	<a href="https://github.com/ReSubmerged/ReSubmerged/releases">
-		<img alt="GitHub Downloads" src="https://img.shields.io/github/downloads/ReSubmerged/ReSubmerged/total">
+		<img alt="GitHub Downloads" src="https://img.shields.io/github/downloads/ReSubmerged/ReSubmerged/total?cacheSeconds=300">
 	</a>
 	<a href="https://github.com/ReSubmerged/ReSubmerged/releases/latest">
 		<img alt="Latest GitHub Release" src="https://img.shields.io/github/v/release/ReSubmerged/ReSubmerged?include_prereleases">
