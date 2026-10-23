@@ -1,5 +1,6 @@
 ﻿using BepInEx;
 using BepInEx.Unity.IL2CPP;
+using BepInEx.Configuration;
 using HarmonyLib;
 using Reactor;
 using Reactor.Localization;
@@ -12,6 +13,7 @@ using Submerged.Loading;
 using Submerged.Localization;
 using Submerged.Map;
 using Submerged.Resources;
+using Submerged.Colors;
 
 namespace Submerged;
 
@@ -19,6 +21,9 @@ namespace Submerged;
 [BepInDependency(ReactorPlugin.Id)]
 public sealed partial class SubmergedPlugin : BasePlugin
 {
+    public static ConfigEntry<bool> unlockCosmetics;
+    public static ConfigEntry<bool> dontShowCosmeticsInGame;
+
     public SubmergedPlugin()
     {
         InteropPatches.Initialize();
@@ -52,6 +57,12 @@ public sealed partial class SubmergedPlugin : BasePlugin
         LoadingManager.RegisterLoading(nameof(MapLoader));
         AddComponent<LoadingManager>();
         AddComponent<AssetLoader>();
+        AddComponent<RainbowUpdater>();
+
+        unlockCosmetics = Config.Bind("Cosmetics", "UnlockAll", true, "Unlock all cosmetics");
+        dontShowCosmeticsInGame = Config.Bind("Cosmetics", "DontShowCosmeticsInGame", false, "Don't show any cosmetics in-game (only client-side)");
+
+        CustomColors.Load();
 
         CustomSystemTypes.Initialize();
 

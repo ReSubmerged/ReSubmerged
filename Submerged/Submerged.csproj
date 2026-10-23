@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <VersionPrefix>2026.10.11</VersionPrefix>
+        <VersionPrefix>2026.10.23</VersionPrefix>
         <VersionSuffix Condition="'$(Configuration)' == 'Debug'">dev</VersionSuffix>
         <Authors>ReSubmerged Developers</Authors>
         <RepositoryType>git</RepositoryType>
