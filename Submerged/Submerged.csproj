@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <VersionPrefix>2026.10.23</VersionPrefix>
+        <VersionPrefix>2026.10.25</VersionPrefix>
         <VersionSuffix Condition="'$(Configuration)' == 'Debug'">dev</VersionSuffix>
         <Authors>ReSubmerged Developers</Authors>
         <RepositoryType>git</RepositoryType>
@@ -30,6 +30,7 @@
         <PackageReference Include="JetBrains.Annotations" Version="2025.2.2" Aliases="JetBrains" PrivateAssets="all" />
         <PackageReference Include="Microsoft.Unity.Analyzers" Version="1.25.0" PrivateAssets="all" />
         <PackageReference Include="Submerged.Resource.Embedder" Version="2.2.1.1" PrivateAssets="all" />
+        <PackageReference Include="Unity" Version="5.11.10" />
     </ItemGroup>
 
     <ItemGroup>
