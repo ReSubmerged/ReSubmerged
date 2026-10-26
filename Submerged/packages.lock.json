@@ -64,6 +64,15 @@
         "resolved": "2.2.1.1",
         "contentHash": "yjvq4uDQkklMnflX0VSAXgPVtGUap9lR3aurDgzX89OHtEj6pJuPhqLRZaTN2s45OwS86QkwIf9d1YPt8eiPGg=="
       },
+      "Unity": {
+        "type": "Direct",
+        "requested": "[5.11.10, )",
+        "resolved": "5.11.10",
+        "contentHash": "B4+Ps3oqI78hJ+dAFsJhPkJT6qycsNExgLbtw7CEHSzKc2ac3YyUR8SHQ+ZyTwld/y5IbDx/aNOHnKE9Em1zWA==",
+        "dependencies": {
+          "System.Runtime.CompilerServices.Unsafe": "4.5.2"
+        }
+      },
       "AsmResolver": {
         "type": "Transitive",
         "resolved": "6.0.0-beta.1",
@@ -695,6 +704,11 @@
           "Microsoft.NETCore.Platforms": "1.1.0",
           "Microsoft.NETCore.Targets": "1.1.0"
         }
+      },
+      "System.Runtime.CompilerServices.Unsafe": {
+        "type": "Transitive",
+        "resolved": "4.5.2",
+        "contentHash": "wprSFgext8cwqymChhrBLu62LMg/1u92bU+VOwyfBimSPVFXtsNqEWC92Pf9ofzJFlk4IHmJA75EDJn1b2goAQ=="
       },
       "System.Runtime.Extensions": {
         "type": "Transitive",
