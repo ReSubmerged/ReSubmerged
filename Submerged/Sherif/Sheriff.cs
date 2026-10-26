@@ -1,5 +1,6 @@
 using Hazel;
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace SherriffRole
@@ -8,18 +9,26 @@ namespace SherriffRole
     {
         public static readonly Color Color = new Color(1f, 204f / 255f, 0f, 1f);
 
-        public static PlayerControl Player;
+        /// <summary>Joueurs Shérifs de la partie en cours (plusieurs possibles).</summary>
+        public static readonly HashSet<byte> Players = new();
+
         public static float KillTimer;
         static PlayerControl closest;
 
-        public static bool IsLocal => IsSheriff(PlayerControl.LocalPlayer);
+        public static bool IsLocal => PlayerControl.LocalPlayer != null && IsSheriff(PlayerControl.LocalPlayer);
 
-        public static bool IsSheriff(PlayerControl player) => Player != null && player != null && player.PlayerId == Player.PlayerId;
+        public static bool IsSheriff(PlayerControl player) => player != null && Players.Contains(player.PlayerId);
 
-        public static void Set(PlayerControl player)
+        public static void Clear()
         {
-            if (player == null) return;
-            Player = player;
+            Players.Clear();
+            closest = null;
+        }
+
+        static void Set(IEnumerable<byte> ids)
+        {
+            Clear();
+            foreach (var id in ids) Players.Add(id);
             KillTimer = Math.Max(0f, CustomGameOptions.SheriffKillCD - 10f);
         }
 
@@ -28,15 +37,28 @@ namespace SherriffRole
 
         public static void FinishRpc(MessageWriter writer) => AmongUsClient.Instance.FinishRpcImmediately(writer);
 
-        //Host: tell everyone who the Sheriff is, along with the host options
-        public static void Announce(PlayerControl sheriff)
+        //Host: tell everyone who the Sheriffs are (possibly nobody), along with the host options
+        public static void Announce(List<byte> sheriffs)
         {
             var writer = StartRpc(CustomRPC.SetSheriff);
-            writer.Write(sheriff.PlayerId);
+            writer.Write((byte)sheriffs.Count);
+            foreach (var id in sheriffs) writer.Write(id);
             writer.Write(CustomGameOptions.showSheriff);
             writer.Write(CustomGameOptions.SheriffKillCD);
             FinishRpc(writer);
-            Set(sheriff);
+            Set(sheriffs);
+        }
+
+        //Host: send the lobby settings to everyone
+        public static void SyncSettings()
+        {
+            if (AmongUsClient.Instance == null || !AmongUsClient.Instance.AmHost || PlayerControl.LocalPlayer == null) return;
+            var writer = StartRpc(CustomRPC.SyncSheriffSettings);
+            writer.Write((byte)CustomGameOptions.SheriffCount);
+            writer.Write((byte)CustomGameOptions.SheriffChance);
+            writer.Write(CustomGameOptions.showSheriff);
+            writer.Write(CustomGameOptions.SheriffKillCD);
+            FinishRpc(writer);
         }
 
         public static void HandleRpc(byte callId, MessageReader reader)
@@ -44,23 +66,71 @@ namespace SherriffRole
             switch (callId)
             {
                 case (byte)CustomRPC.SetSheriff:
-                    var sheriff = Find(reader.ReadByte());
+                {
+                    var count = reader.ReadByte();
+                    var ids = new List<byte>();
+                    for (var i = 0; i < count; i++) ids.Add(reader.ReadByte());
                     CustomGameOptions.showSheriff = reader.ReadBoolean();
                     CustomGameOptions.SheriffKillCD = reader.ReadSingle();
-                    Set(sheriff);
+                    Set(ids);
                     break;
+                }
                 case (byte)CustomRPC.SheriffKill:
+                {
                     var killer = Find(reader.ReadByte());
                     var victim = Find(reader.ReadByte());
                     if (IsSheriff(killer) && victim != null) killer.MurderPlayer(victim, MurderResultFlags.Succeeded);
                     break;
+                }
+                case (byte)CustomRPC.SyncSheriffSettings:
+                {
+                    int count = reader.ReadByte(), chance = reader.ReadByte();
+                    var changed = count != CustomGameOptions.SheriffCount || chance != CustomGameOptions.SheriffChance;
+                    CustomGameOptions.SheriffCount = count;
+                    CustomGameOptions.SheriffChance = chance;
+                    CustomGameOptions.showSheriff = reader.ReadBoolean();
+                    CustomGameOptions.SheriffKillCD = reader.ReadSingle();
+                    if (changed) SheriffOptionsMenu.NotifyChange(false);
+                    break;
+                }
             }
+        }
+
+        //Host only: choose the Sheriffs among the plain Crewmates, like a vanilla role (count + chance)
+        public static void SelectSheriffs()
+        {
+            var sheriffs = new List<byte>();
+            var options = GameOptionsManager.Instance.CurrentGameOptions;
+            var hideAndSeek = options.GameMode is AmongUs.GameOptions.GameModes.HideNSeek or AmongUs.GameOptions.GameModes.SeekFools;
+
+            if (!hideAndSeek && CustomGameOptions.SheriffCount > 0 && CustomGameOptions.SheriffChance > 0)
+            {
+                var candidates = new List<PlayerControl>();
+                foreach (var player in PlayerControl.AllPlayerControls)
+                {
+                    var data = player.Data;
+                    //Only simple Crewmates: Engineers, Scientists... keep their vanilla role
+                    if (data != null && !data.Disconnected && data.Role != null && data.Role.Role == AmongUs.GameOptions.RoleTypes.Crewmate)
+                        candidates.Add(player);
+                }
+
+                var random = new System.Random();
+                for (var i = 0; i < CustomGameOptions.SheriffCount && candidates.Count > 0; i++)
+                {
+                    if (random.Next(100) >= CustomGameOptions.SheriffChance) continue;
+                    var index = random.Next(candidates.Count);
+                    sheriffs.Add(candidates[index].PlayerId);
+                    candidates.RemoveAt(index);
+                }
+            }
+
+            Announce(sheriffs);
         }
 
         //Called every frame from HudManager.Update
         public static void Update(HudManager hud)
         {
-            if (Player == null) return;
+            if (Players.Count == 0) return;
             UpdateRole(hud);
             if (MeetingHud.Instance != null) HighlightInMeeting(MeetingHud.Instance);
         }
@@ -117,26 +187,33 @@ namespace SherriffRole
 
         static void HighlightInMeeting(MeetingHud meeting)
         {
-            if (!IsLocal && !CustomGameOptions.showSheriff) return;
             foreach (var area in meeting.playerStates)
-                if (area.PlayerId == Player.PlayerId) area.NameText.color = Color;
+            {
+                if (!Players.Contains(area.PlayerId)) continue;
+                if (CustomGameOptions.showSheriff || area.PlayerId == PlayerControl.LocalPlayer.PlayerId) area.NameText.color = Color;
+            }
         }
 
         static void UpdateRole(HudManager hud)
         {
             if (PlayerControl.AllPlayerControls.Count <= 1) return;
-            if (IsLocal || CustomGameOptions.showSheriff) Player.cosmetics.nameText.color = Color;
+
+            foreach (var player in PlayerControl.AllPlayerControls)
+                if (player != null && IsSheriff(player) && (CustomGameOptions.showSheriff || player == PlayerControl.LocalPlayer))
+                    player.cosmetics.nameText.color = Color;
+
             if (!IsLocal) return;
+            var me = PlayerControl.LocalPlayer;
 
             //The cooldown restarts after each meeting
             if (MeetingHud.Instance != null) KillTimer = CustomGameOptions.SheriffKillCD;
 
             //The button only exists in a running match, while alive and outside meetings
-            var active = !Player.Data.IsDead && MeetingHud.Instance == null && ShipStatus.Instance != null;
+            var active = !me.Data.IsDead && MeetingHud.Instance == null && ShipStatus.Instance != null;
             var button = hud.KillButton;
             if (active) button.Show();
             else button.Hide();
-            if (!active || !Player.CanMove) return;
+            if (!active || !me.CanMove) return;
 
             KillTimer = Math.Max(0f, KillTimer - Time.deltaTime);
             button.SetCoolDown(KillTimer, CustomGameOptions.SheriffKillCD);

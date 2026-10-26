@@ -1,29 +1,61 @@
-using BepInEx;
+using System;
 using BepInEx.Configuration;
-using BepInEx.Unity.IL2CPP;
+using Reactor.Localization.Utilities;
 
 namespace SherriffRole
 {
-    public enum CustomRPC : byte { SetSheriff = 150, SheriffKill = 151 }
+    public enum CustomRPC : byte { SetSheriff = 150, SheriffKill = 151, SyncSheriffSettings = 152 }
 
-    //Host options, edited in BepInEx/config and sent to the other players when the Sheriff is chosen
+    /// <summary>
+    /// Réglages du Shérif. L'hôte les règle dans le menu des rôles du lobby (nombre et %),
+    /// ils sont enregistrés dans la config BepInEx de Submerged et envoyés aux autres joueurs.
+    /// </summary>
     public static class CustomGameOptions
     {
+        public const int MaxCount = 15;
+
+        public static int SheriffCount;
+        public static int SheriffChance;
         public static bool showSheriff;
         public static float SheriffKillCD = 30f;
-    }
 
-    public class SherriffRole : BasePlugin
-    {
-        public override void Load()
+        static ConfigEntry<int> _count;
+        static ConfigEntry<int> _chance;
+        static ConfigEntry<bool> _show;
+        static ConfigEntry<float> _cooldown;
+
+        public static StringNames SheriffName { get; private set; }
+
+        public static void Init(ConfigFile config)
         {
-            var show = Config.Bind("Sheriff", "Show Sheriff", false, "Everyone sees who the Sheriff is");
-            var cooldown = Config.Bind("Sheriff", "Kill Cooldown", 30f, "Seconds between two shots (10 to 40)");
-            CustomGameOptions.showSheriff = show.Value;
-            CustomGameOptions.SheriffKillCD = System.Math.Max(10f, System.Math.Min(40f, cooldown.Value));
+            _count = config.Bind("Sheriff", "Count", 0, "Nombre de Shérifs (0 à 15), réglable dans le menu des rôles du lobby");
+            _chance = config.Bind("Sheriff", "Chance", 0, "Chance d'avoir un Shérif (0 à 100 %), réglable dans le menu des rôles du lobby");
+            _show = config.Bind("Sheriff", "Show Sheriff", false, "Tout le monde voit qui est le Shérif");
+            _cooldown = config.Bind("Sheriff", "Kill Cooldown", 30f, "Secondes entre deux tirs (10 à 40)");
+            SheriffName = CustomStringName.CreateAndRegister("Shérif");
+            LoadLocal();
+        }
 
-            Log.LogMessage("Sheriff Mod loaded");
-            CustomServer.Register(Config, Log);
+        /// <summary>Recharge les réglages enregistrés (quand on est l'hôte).</summary>
+        public static void LoadLocal()
+        {
+            if (_count == null) return;
+            SheriffCount = Math.Clamp(_count.Value, 0, MaxCount);
+            SheriffChance = Math.Clamp(_chance.Value / 10 * 10, 0, 100);
+            showSheriff = _show.Value;
+            SheriffKillCD = Math.Clamp(_cooldown.Value, 10f, 40f);
+        }
+
+        /// <summary>L'hôte modifie le nombre ou la chance depuis le lobby.</summary>
+        public static void SetQuota(int count, int chance)
+        {
+            SheriffCount = Math.Clamp(count, 0, MaxCount);
+            SheriffChance = Math.Clamp(chance, 0, 100);
+            if (_count != null)
+            {
+                _count.Value = SheriffCount;
+                _chance.Value = SheriffChance;
+            }
         }
     }
 }

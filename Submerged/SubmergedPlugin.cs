@@ -1,4 +1,4 @@
-﻿using BepInEx;
+using BepInEx;
 using BepInEx.Unity.IL2CPP;
 using BepInEx.Configuration;
 using HarmonyLib;
@@ -63,6 +63,8 @@ public sealed partial class SubmergedPlugin : BasePlugin
         dontShowCosmeticsInGame = Config.Bind("Cosmetics", "DontShowCosmeticsInGame", false, "Don't show any cosmetics in-game (only client-side)");
 
         CustomColors.Load();
+
+        SherriffRole.CustomGameOptions.Init(Config);
 
         CustomSystemTypes.Initialize();
 
