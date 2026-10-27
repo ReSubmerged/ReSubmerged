@@ -26,6 +26,8 @@ public static class DiscordButtonPatches
         Transform existing = parent.Find(BUTTON_NAME);
         PassiveButton button = existing ? existing.GetComponent<PassiveButton>() : CreateButton(template);
 
+        foreach (SpriteRenderer renderer in button.GetComponentsInChildren<SpriteRenderer>(true)) renderer.color = _discordColor;
+
         Camera camera = Camera.main;
         if (!camera) return;
         Vector3 position = camera.ViewportToWorldPoint(new Vector3(0.35f, 0.955f, 0f));
@@ -41,11 +43,12 @@ public static class DiscordButtonPatches
         button.OnClick = new Button.ButtonClickedEvent();
         button.OnClick.AddListener((System.Action) (() => Application.OpenURL(DISCORD_URL)));
 
-        // Sinon la traduction remet « CRÉDITS »
-        foreach (TextTranslatorTMP translator in button.GetComponentsInChildren<TextTranslatorTMP>(true)) UnityObject.Destroy(translator);
+        // Supprimés tout de suite (pas en fin de frame), sinon ils s'exécutent quand même une fois :
+        // AspectPosition replace le bouton sur « Crédits », la traduction remet « CRÉDITS » et le survol remet le gris
+        foreach (AspectPosition aspect in button.GetComponentsInChildren<AspectPosition>(true)) UnityObject.DestroyImmediate(aspect);
+        foreach (TextTranslatorTMP translator in button.GetComponentsInChildren<TextTranslatorTMP>(true)) UnityObject.DestroyImmediate(translator);
+        foreach (ButtonRolloverHandler rollover in button.GetComponentsInChildren<ButtonRolloverHandler>(true)) UnityObject.DestroyImmediate(rollover);
         foreach (TextMeshPro text in button.GetComponentsInChildren<TextMeshPro>(true)) text.text = "DISCORD";
-
-        foreach (SpriteRenderer renderer in button.GetComponentsInChildren<SpriteRenderer>(true)) renderer.color = _discordColor;
 
         return button;
     }
