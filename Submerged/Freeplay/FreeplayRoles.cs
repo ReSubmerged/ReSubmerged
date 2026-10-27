@@ -237,7 +237,28 @@ namespace FreeplayRoles
         static void TaskAddButton_AddTaskPrefix(TaskAddButton __instance)
         {
             if (__instance.role == null) return;
+            _positionBeforeClick = PlayerControl.LocalPlayer ? LocalPosition : null;
             Log($"Clic sur le fichier « {(__instance.Text ? __instance.Text.text : "?")} » (rôle {__instance.role.Role}, à nous : {TryGetKind(__instance, out _)}), joueur en {LocalPosition}, apparu : {_spawned}");
+        }
+
+        static Vector2? _positionBeforeClick;
+
+        /// <summary>
+        /// En jeu libre, le jeu place le joueur au point d'attente (0, 0) quand il change de rôle sur le PC,
+        /// hors de la carte : on le remet là où il était avant le clic.
+        /// </summary>
+        static void RestorePosition()
+        {
+            var me = PlayerControl.LocalPlayer;
+            if (!me || !_positionBeforeClick.HasValue) return;
+            var before = _positionBeforeClick.Value;
+            _positionBeforeClick = null;
+            if (Vector2.Distance(before, LocalPosition) < 1f) return;
+
+            me.NetTransform.SnapTo(before);
+            if (HudManager.Instance && HudManager.Instance.PlayerCam) HudManager.Instance.PlayerCam.SnapToTarget();
+            _lastPosition = before;
+            Log($"Joueur remis à sa place en {before}");
         }
 
         //Diagnostic : tout déplacement brusque du joueur local en jeu libre, et l'apparition sur la carte
@@ -260,6 +281,7 @@ namespace FreeplayRoles
         {
             if (__instance.role == null) return; //une tâche, pas un rôle
             Log($"Après le clic : joueur en {LocalPosition}");
+            RestorePosition();
             var isOurs = TryGetKind(__instance, out var kind);
             Sheriff.SetFreeplay(isOurs && kind == Kind.Sheriff);
             Miner.SetFreeplay(isOurs && kind == Kind.Miner);
