@@ -49,6 +49,21 @@ namespace MinerRole
             Timer = Math.Max(0f, MinerOptions.Cooldown - 10f);
         }
 
+        /// <summary>Jeu libre : donne (ou retire) le rôle de Mineur au joueur local, sans passer par l'hôte.</summary>
+        public static void SetFreeplay(bool enabled)
+        {
+            if (!enabled)
+            {
+                if (IsLocal) Clear();
+                return;
+            }
+            Clear();
+            Players.Add(PlayerControl.LocalPlayer.PlayerId);
+            Timer = 0f;
+            _lastPosition = null;
+            Log($"Rôle donné en jeu libre, joueur en {(Vector2) PlayerControl.LocalPlayer.transform.position}");
+        }
+
         static MessageWriter StartRpc(MinerRpc call) =>
             AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte) call, SendOption.Reliable);
 
@@ -187,6 +202,7 @@ namespace MinerRole
             //Même profondeur que les conduits de la carte (le z suit le y)
             var depth = template.transform.position.z - template.transform.position.y / 1000f;
             vent.transform.position = new Vector3(position.x, position.y, position.y / 1000f + depth);
+            Log($"Conduit {id} creusé en {position} (modèle : conduit {template.Id} en {(Vector2) template.transform.position}, joueur en {(Vector2) PlayerControl.LocalPlayer.transform.position})");
 
             vent.Left = null;
             vent.Right = null;
@@ -237,6 +253,7 @@ namespace MinerRole
             }
 
             var me = PlayerControl.LocalPlayer;
+            WatchPosition(me);
             var button = Button(hud);
             if (button == null) return;
 
@@ -254,6 +271,20 @@ namespace MinerRole
             if (CanDig(me)) button.SetEnabled();
             else button.SetDisabled();
             if (Input.GetKeyDown(KeyCode.F)) Dig();
+        }
+
+        static Vector2? _lastPosition;
+
+        static void Log(string message) => Reactor.Utilities.Logger<Submerged.SubmergedPlugin>.Warning($"[Mineur] {message}");
+
+        /// <summary>Diagnostic : note dans le log tout saut de position du Mineur local (téléportation inattendue).</summary>
+        static void WatchPosition(PlayerControl me)
+        {
+            Vector2 position = me.transform.position;
+            if (_lastPosition.HasValue && Vector2.Distance(_lastPosition.Value, position) > 5f)
+                Log($"Saut de position {_lastPosition.Value} -> {position} (dans un conduit : {me.inVent}, mini-jeu : {(Minigame.Instance ? Minigame.Instance.name : "aucun")}, " +
+                    $"peut bouger : {me.CanMove}, conduits creusés : {(Vents.TryGetValue(me.PlayerId, out var list) ? list.Count : 0)})");
+            _lastPosition = position;
         }
 
         /// <summary>Bouton « Creuser » : copie du bouton de capacité du jeu (libre pour un Imposteur simple), avec l'icône du conduit.</summary>
