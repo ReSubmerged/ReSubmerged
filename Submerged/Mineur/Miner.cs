@@ -140,7 +140,7 @@ namespace MinerRole
                     MinerOptions.Count = count;
                     MinerOptions.Chance = chance;
                     ReadSettings(reader);
-                    if (changed) CustomRoles.LobbyRolesMenu.NotifyChange(MinerOptions.Role, false);
+                    if (changed) MinerOptionsMenu.NotifyChange(false);
                     break;
                 }
             }
