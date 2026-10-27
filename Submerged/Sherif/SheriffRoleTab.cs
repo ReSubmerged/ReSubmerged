@@ -2,8 +2,9 @@ using System;
 using System.Globalization;
 using AmongUs.GameOptions;
 using HarmonyLib;
+using Reactor.Utilities.Extensions;
+using Submerged.Resources;
 using UnityEngine;
-using Object = UnityEngine.Object;
 
 namespace SherriffRole
 {
@@ -27,6 +28,7 @@ namespace SherriffRole
         static NumberOption _cooldownOption;
         static FloatGameSetting _cooldownSetting;
         static Color? _headerSpriteColor, _headerTextColor;
+        static Sprite _icon, _screenshot, _background;
 
         static bool IsSheriffTab(PassiveButton button) => _tab != null && _tab && button != null && button.Pointer == _tab.button.Pointer;
         static bool IsCooldownOption(NumberOption option) => _cooldownOption != null && _cooldownOption && option != null && option.Pointer == _cooldownOption.Pointer;
@@ -77,15 +79,11 @@ namespace SherriffRole
             tab.name = TabName;
             _tab = tab;
 
-            var crewmate = FindRole(RoleTypes.Crewmate);
-            if (crewmate != null && crewmate.RoleIconWhite != null) tab.icon.sprite = crewmate.RoleIconWhite;
-            tab.background.color = Sheriff.Color;
-            foreach (var rollover in tab.GetComponentsInChildren<ButtonRolloverHandler>(true))
-            {
-                if (rollover.Target == null || rollover.Target.Pointer != tab.background.Pointer) continue;
-                rollover.OutColor = Sheriff.Color;
-                rollover.OverColor = Color.Lerp(Sheriff.Color, Color.white, 0.35f);
-            }
+            //Le fond de l'onglet est une image déjà bleue : on en fait une copie jaune
+            var background = YellowBackground(tab.background.sprite);
+            if (background != null) tab.background.sprite = background;
+            var icon = Icon(tab.icon.sprite);
+            if (icon != null) tab.icon.sprite = icon;
 
             button.OnClick.RemoveAllListeners();
             button.OnClick.AddListener((Action)(() => OpenTab(menu, button, borrowed)));
@@ -115,7 +113,7 @@ namespace SherriffRole
 
                 //Retire les réglages du rôle emprunté
                 foreach (var child in menu.advancedSettingChildren)
-                    if (child != null && child) Object.Destroy(child.gameObject);
+                    if (child != null && child) UnityEngine.Object.Destroy(child.gameObject);
                 menu.advancedSettingChildren.Clear();
 
                 var name = borrowed.NiceName;
@@ -128,8 +126,8 @@ namespace SherriffRole
                 menu.roleHeaderSprite.color = Sheriff.Color;
                 menu.roleHeaderText.color = HeaderTextColor;
 
-                var crewmate = FindRole(RoleTypes.Crewmate);
-                if (crewmate != null && crewmate.RoleScreenshot != null) menu.roleScreenshot.sprite = crewmate.RoleScreenshot;
+                var screenshot = Screenshot(menu.roleScreenshot.sprite);
+                if (screenshot != null) menu.roleScreenshot.sprite = screenshot;
 
                 AddCooldownOption(menu);
             }
@@ -137,6 +135,76 @@ namespace SherriffRole
             {
                 Reactor.Utilities.Logger<Submerged.SubmergedPlugin>.Error($"[Shérif] Ouverture de l'onglet : {e}");
             }
+        }
+
+        /// <summary>Étoile de shérif blanche, à la taille de l'icône du jeu.</summary>
+        static Sprite Icon(Sprite original)
+        {
+            if (_icon != null && _icon) return _icon;
+            var tex = ResourceManager.GetTexture("SheriffIcon.png");
+            if (tex == null) return null;
+            var size = original != null ? Mathf.Max(original.bounds.size.x, original.bounds.size.y) : 1f;
+            _icon = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f), tex.width / size);
+            _icon.DontUnload();
+            return _icon;
+        }
+
+        /// <summary>Capture du Shérif en jeu, recadrée au format de l'image du jeu.</summary>
+        static Sprite Screenshot(Sprite original)
+        {
+            if (_screenshot != null && _screenshot) return _screenshot;
+            var tex = ResourceManager.GetTexture("SheriffScreenshot.png");
+            if (tex == null) return null;
+
+            float width = tex.width, height = tex.height;
+            if (original != null)
+            {
+                var aspect = original.rect.width / original.rect.height;
+                if (width / height > aspect) width = height * aspect;
+                else height = width / aspect;
+            }
+            var rect = new Rect((tex.width - width) / 2f, (tex.height - height) / 2f, width, height);
+            var ppu = original != null ? width / original.bounds.size.x : 100f;
+            _screenshot = Sprite.Create(tex, rect, new Vector2(0.5f, 0.5f), ppu);
+            _screenshot.DontUnload();
+            return _screenshot;
+        }
+
+        /// <summary>Copie l'image de l'onglet en remplaçant le bleu par le jaune du Shérif (dégradé et transparence gardés).</summary>
+        static Sprite YellowBackground(Sprite original)
+        {
+            if (_background != null && _background) return _background;
+            if (original == null) return null;
+
+            //La texture du jeu n'est pas lisible : on la recopie via une RenderTexture
+            var source = original.texture;
+            var area = original.textureRect;
+            var rt = RenderTexture.GetTemporary(source.width, source.height, 0, RenderTextureFormat.ARGB32);
+            Graphics.Blit(source, rt);
+            var previous = RenderTexture.active;
+            RenderTexture.active = rt;
+            var tex = new Texture2D((int) area.width, (int) area.height, TextureFormat.ARGB32, false);
+            tex.ReadPixels(new Rect(area.x, area.y, area.width, area.height), 0, 0);
+            RenderTexture.active = previous;
+            RenderTexture.ReleaseTemporary(rt);
+
+            var pixels = tex.GetPixels();
+            var brightest = 0.01f;
+            for (var i = 0; i < pixels.Length; i++)
+                if (pixels[i].a > 0.1f) brightest = Mathf.Max(brightest, pixels[i].maxColorComponent);
+            for (var i = 0; i < pixels.Length; i++)
+            {
+                var pixel = pixels[i];
+                var shade = Mathf.Clamp01(pixel.maxColorComponent / brightest);
+                pixels[i] = new Color(Sheriff.Color.r * shade, Sheriff.Color.g * shade, Sheriff.Color.b * shade, pixel.a);
+            }
+            tex.SetPixels(pixels);
+            tex.Apply();
+
+            var pivot = new Vector2(original.pivot.x / original.rect.width, original.pivot.y / original.rect.height);
+            _background = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), pivot, original.pixelsPerUnit, 0, SpriteMeshType.FullRect, original.border);
+            _background.DontUnload();
+            return _background;
         }
 
         static string ReplaceName(string text, string name)
@@ -147,7 +215,7 @@ namespace SherriffRole
 
         static void AddCooldownOption(RolesSettingsMenu menu)
         {
-            var option = Object.Instantiate(menu.numberOptionOrigin, Vector3.zero, Quaternion.identity, menu.AdvancedRolesSettings.transform);
+            var option = UnityEngine.Object.Instantiate(menu.numberOptionOrigin, Vector3.zero, Quaternion.identity, menu.AdvancedRolesSettings.transform);
             option.transform.localPosition = new Vector3(RolesSettingsMenu.X_ADVANCED_START, RolesSettingsMenu.Y_ADVANCED_START, -2f);
             _cooldownOption = option; //avant SetUpFromData, pour que nos patchs s'appliquent dès l'initialisation
             option.SetClickMask(menu.ButtonClickMask);
