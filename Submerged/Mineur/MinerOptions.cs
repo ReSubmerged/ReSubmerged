@@ -1,0 +1,96 @@
+using System;
+using BepInEx.Configuration;
+using CustomRoles;
+using Reactor.Localization.Utilities;
+
+namespace MinerRole
+{
+    /// <summary>
+    /// Réglages du Mineur. L'hôte les règle dans le menu des rôles du lobby (ligne nombre + % et onglet « Mineur »),
+    /// ils sont enregistrés dans la config BepInEx de Submerged et envoyés aux autres joueurs.
+    /// </summary>
+    public static class MinerOptions
+    {
+        public const int MaxCount = 3;
+        public const float MinCooldown = 10f, MaxCooldown = 60f;
+        public const int MinVents = 1, MaxVents = 10;
+
+        public static int Count;
+        public static int Chance;
+        public static float Cooldown = 25f;
+        public static int MaxVentCount = 3;
+
+        static ConfigEntry<int> _count;
+        static ConfigEntry<int> _chance;
+        static ConfigEntry<float> _cooldown;
+        static ConfigEntry<int> _maxVents;
+
+        public static LobbyRole Role { get; private set; }
+
+        public static void Init(ConfigFile config)
+        {
+            _count = config.Bind("Miner", "Count", 0, "Nombre de Mineurs (0 à 3), réglable dans le menu des rôles du lobby");
+            _chance = config.Bind("Miner", "Chance", 0, "Chance d'avoir un Mineur (0 à 100 %), réglable dans le menu des rôles du lobby");
+            _cooldown = config.Bind("Miner", "Cooldown", 25f, "Secondes entre deux conduits creusés (10 à 60)");
+            _maxVents = config.Bind("Miner", "Max Vents", 3, "Nombre maximum de conduits par Mineur (1 à 10)");
+            LoadLocal();
+
+            Role = new LobbyRole
+            {
+                Name = "Mineur",
+                StringName = CustomStringName.CreateAndRegister("Mineur"),
+                Team = RoleTeamTypes.Impostor,
+                Color = Miner.Color,
+                Info = "Creusez des conduits n'importe où sur la carte.\nVos conduits sont reliés entre eux.",
+                IconResource = "MinerIcon.png",
+                ScreenshotResource = "MinerScreenshot.png",
+                MaxCount = MaxCount,
+                GetCount = () => Count,
+                GetChance = () => Chance,
+                SetQuota = SetQuota,
+                Sync = Miner.SyncSettings,
+            };
+            Role.Settings.Add(new RoleNumberSetting
+            {
+                Title = "Temps de recharge pour creuser",
+                Min = MinCooldown, Max = MaxCooldown, Step = 2.5f, Suffix = "s",
+                Get = () => Cooldown,
+                Set = value =>
+                {
+                    Cooldown = value;
+                    _cooldown.Value = value;
+                },
+            });
+            Role.Settings.Add(new RoleNumberSetting
+            {
+                Title = "Nombre max de conduits",
+                Min = MinVents, Max = MaxVents, Step = 1f,
+                Get = () => MaxVentCount,
+                Set = value =>
+                {
+                    MaxVentCount = (int) value;
+                    _maxVents.Value = MaxVentCount;
+                },
+            });
+            LobbyRoles.Register(Role);
+        }
+
+        /// <summary>Recharge les réglages enregistrés (quand on est l'hôte).</summary>
+        public static void LoadLocal()
+        {
+            if (_count == null) return;
+            Count = Math.Clamp(_count.Value, 0, MaxCount);
+            Chance = Math.Clamp(_chance.Value / 10 * 10, 0, 100);
+            Cooldown = Math.Clamp(_cooldown.Value, MinCooldown, MaxCooldown);
+            MaxVentCount = Math.Clamp(_maxVents.Value, MinVents, MaxVents);
+        }
+
+        static void SetQuota(int count, int chance)
+        {
+            Count = Math.Clamp(count, 0, MaxCount);
+            Chance = Math.Clamp(chance, 0, 100);
+            _count.Value = Count;
+            _chance.Value = Chance;
+        }
+    }
+}
