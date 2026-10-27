@@ -32,6 +32,19 @@ namespace SherriffRole
             KillTimer = Math.Max(0f, CustomGameOptions.SheriffKillCD - 10f);
         }
 
+        /// <summary>Jeu libre : donne (ou retire) le rôle de Shérif au joueur local, sans passer par l'hôte.</summary>
+        public static void SetFreeplay(bool enabled)
+        {
+            if (!enabled)
+            {
+                if (IsLocal) Clear();
+                return;
+            }
+            Clear();
+            Players.Add(PlayerControl.LocalPlayer.PlayerId);
+            KillTimer = 0f;
+        }
+
         public static MessageWriter StartRpc(CustomRPC call) =>
             AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, (byte)call, SendOption.Reliable);
 
