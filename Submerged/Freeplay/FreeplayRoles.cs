@@ -45,6 +45,9 @@ namespace FreeplayRoles
             Buttons.Clear();
             try
             {
+                //PC ouvert avant l'apparition sur la carte : choisir un de nos rôles là bloquait l'apparition
+                //(le joueur restait au point d'attente, hors de la carte). Nos fichiers n'y sont donc pas proposés.
+                if (!HasSpawned()) return;
                 if (taskFolder == null || taskFolder.RoleChildren == null || taskFolder.RoleChildren.Count == 0) return;
                 AddButton(__instance, taskFolder, Kind.Sheriff, RoleTypes.Crewmate);
                 AddButton(__instance, taskFolder, Kind.Miner, RoleTypes.Impostor);
@@ -53,6 +56,32 @@ namespace FreeplayRoles
             {
                 Reactor.Utilities.Logger<Submerged.SubmergedPlugin>.Error($"[Jeu libre] Rôles du PC portable : {e}");
             }
+        }
+
+        static bool _spawned;
+
+        /// <summary>Le joueur local est apparu sur la carte (il n'est plus au point d'attente en (0, 0)).</summary>
+        static bool HasSpawned()
+        {
+            var me = PlayerControl.LocalPlayer;
+            if (me == null) return false;
+            return _spawned || ((Vector2) me.transform.position).sqrMagnitude > 0.0001f;
+        }
+
+        //Début d'une partie de jeu libre : rien ne remet les rôles à zéro (pas de retour au lobby), on le fait ici
+        [HarmonyPatch(typeof(ShipStatus), nameof(ShipStatus.Start)), HarmonyPostfix]
+        static void ShipStatus_Start()
+        {
+            if (!AmongUsClient.Instance || AmongUsClient.Instance.NetworkMode != NetworkModes.FreePlay) return;
+            _spawned = false;
+            Sheriff.Clear();
+            Miner.Clear();
+        }
+
+        [HarmonyPatch(typeof(ShipStatus), nameof(ShipStatus.SpawnPlayer)), HarmonyPostfix]
+        static void ShipStatus_SpawnPlayer([HarmonyArgument(0)] PlayerControl player)
+        {
+            if (player != null && player.AmOwner) _spawned = true;
         }
 
         static void AddButton(TaskAdderGame game, TaskFolder folder, Kind kind, RoleTypes baseRole)
