@@ -1,0 +1,1 @@
+dotnet build Submerged/Submerged.csproj -c Release
