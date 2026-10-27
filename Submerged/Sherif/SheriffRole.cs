@@ -13,6 +13,8 @@ namespace SherriffRole
     public static class CustomGameOptions
     {
         public const int MaxCount = 15;
+        public const float MinKillCD = 10f;
+        public const float MaxKillCD = 40f;
 
         public static int SheriffCount;
         public static int SheriffChance;
@@ -25,6 +27,7 @@ namespace SherriffRole
         static ConfigEntry<float> _cooldown;
 
         public static StringNames SheriffName { get; private set; }
+        public static StringNames KillCooldownName { get; private set; }
 
         public static void Init(ConfigFile config)
         {
@@ -33,6 +36,7 @@ namespace SherriffRole
             _show = config.Bind("Sheriff", "Show Sheriff", false, "Tout le monde voit qui est le Shérif");
             _cooldown = config.Bind("Sheriff", "Kill Cooldown", 30f, "Secondes entre deux tirs (10 à 40)");
             SheriffName = CustomStringName.CreateAndRegister("Shérif");
+            KillCooldownName = CustomStringName.CreateAndRegister("Temps de recharge du tir");
             LoadLocal();
         }
 
@@ -43,7 +47,14 @@ namespace SherriffRole
             SheriffCount = Math.Clamp(_count.Value, 0, MaxCount);
             SheriffChance = Math.Clamp(_chance.Value / 10 * 10, 0, 100);
             showSheriff = _show.Value;
-            SheriffKillCD = Math.Clamp(_cooldown.Value, 10f, 40f);
+            SheriffKillCD = Math.Clamp(_cooldown.Value, MinKillCD, MaxKillCD);
+        }
+
+        /// <summary>L'hôte modifie le temps de recharge du tir depuis l'onglet Shérif du lobby.</summary>
+        public static void SetKillCooldown(float cooldown)
+        {
+            SheriffKillCD = Math.Clamp(cooldown, MinKillCD, MaxKillCD);
+            if (_cooldown != null) _cooldown.Value = SheriffKillCD;
         }
 
         /// <summary>L'hôte modifie le nombre ou la chance depuis le lobby.</summary>
