@@ -47,7 +47,11 @@ namespace FreeplayRoles
             {
                 //PC ouvert avant l'apparition sur la carte : choisir un de nos rôles là bloquait l'apparition
                 //(le joueur restait au point d'attente, hors de la carte). Nos fichiers n'y sont donc pas proposés.
-                if (!HasSpawned()) return;
+                if (!HasSpawned())
+                {
+                    Log($"PC ouvert avant l'apparition (joueur en {LocalPosition}) : Shérif et Mineur non proposés");
+                    return;
+                }
                 if (taskFolder == null || taskFolder.RoleChildren == null || taskFolder.RoleChildren.Count == 0) return;
                 AddButton(__instance, taskFolder, Kind.Sheriff, RoleTypes.Crewmate);
                 AddButton(__instance, taskFolder, Kind.Miner, RoleTypes.Impostor);
@@ -81,7 +85,9 @@ namespace FreeplayRoles
         [HarmonyPatch(typeof(ShipStatus), nameof(ShipStatus.SpawnPlayer)), HarmonyPostfix]
         static void ShipStatus_SpawnPlayer([HarmonyArgument(0)] PlayerControl player)
         {
-            if (player != null && player.AmOwner) _spawned = true;
+            if (player == null || !player.AmOwner) return;
+            _spawned = true;
+            Log($"Apparition sur la carte en {(Vector2) player.transform.position}");
         }
 
         static void AddButton(TaskAdderGame game, TaskFolder folder, Kind kind, RoleTypes baseRole)
@@ -223,11 +229,37 @@ namespace FreeplayRoles
                 __instance.Overlay.enabled = false;
         }
 
+        static void Log(string message) => Reactor.Utilities.Logger<Submerged.SubmergedPlugin>.Warning($"[Jeu libre] {message}");
+
+        static Vector2 LocalPosition => PlayerControl.LocalPlayer ? (Vector2) PlayerControl.LocalPlayer.transform.position : Vector2.zero;
+
+        [HarmonyPatch(typeof(TaskAddButton), nameof(TaskAddButton.AddTask)), HarmonyPrefix]
+        static void TaskAddButton_AddTaskPrefix(TaskAddButton __instance)
+        {
+            if (__instance.role == null) return;
+            Log($"Clic sur le fichier « {(__instance.Text ? __instance.Text.text : "?")} » (rôle {__instance.role.Role}, à nous : {TryGetKind(__instance, out _)}), joueur en {LocalPosition}, apparu : {_spawned}");
+        }
+
+        //Diagnostic : tout déplacement brusque du joueur local en jeu libre, et l'apparition sur la carte
+        static Vector2? _lastPosition;
+
+        [HarmonyPatch(typeof(HudManager), nameof(HudManager.Update)), HarmonyPostfix]
+        static void HudManager_Update()
+        {
+            if (!AmongUsClient.Instance || AmongUsClient.Instance.NetworkMode != NetworkModes.FreePlay || !PlayerControl.LocalPlayer) return;
+            var position = LocalPosition;
+            if (_lastPosition.HasValue && Vector2.Distance(_lastPosition.Value, position) > 5f)
+                Log($"Saut de position {_lastPosition.Value} -> {position} (rôle : {(PlayerControl.LocalPlayer.Data?.Role ? PlayerControl.LocalPlayer.Data.Role.Role.ToString() : "?")}, " +
+                    $"Shérif : {Sheriff.IsLocal}, Mineur : {Miner.IsLocal}, mini-jeu : {(Minigame.Instance ? Minigame.Instance.name : "aucun")})");
+            _lastPosition = position;
+        }
+
         //Choix d'un rôle sur le PC : le jeu donne le rôle de base, puis on active (ou retire) Shérif et Mineur
         [HarmonyPatch(typeof(TaskAddButton), nameof(TaskAddButton.AddTask)), HarmonyPostfix]
         static void TaskAddButton_AddTask(TaskAddButton __instance)
         {
             if (__instance.role == null) return; //une tâche, pas un rôle
+            Log($"Après le clic : joueur en {LocalPosition}");
             var isOurs = TryGetKind(__instance, out var kind);
             Sheriff.SetFreeplay(isOurs && kind == Kind.Sheriff);
             Miner.SetFreeplay(isOurs && kind == Kind.Miner);
